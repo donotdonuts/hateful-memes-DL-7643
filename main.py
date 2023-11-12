@@ -33,16 +33,26 @@ def get_arg_parser():
 
     # dataset parameters
     parser.add_argument('--dataset', default='original', choices=['original', 'masked', 'inpainted', 'tamil', 'prop'])
+
+    # lc: determine if to use fine grained  labels
     parser.add_argument('--labels', default='original', choices=['original', 'fine_grained', 'fine_grained_gold'])
     parser.add_argument('--image_size', type=int, default=224)
 
     # model parameters
     parser.add_argument('--multilingual_tokenizer_path', type=str, default='none', choices=['none', 'bert-base-multilingual-uncased', 'xlm-roberta-base' ])
     parser.add_argument('--clip_pretrained_model', type=str, default='openai/clip-vit-base-patch32')
+
+    # lc: provide capability to load local pretrained weights for CLIP
     parser.add_argument('--local_pretrained_weights', type=str, default='none')
     parser.add_argument('--caption_mode', type=str, default='none', choices=['none', 'replace_image', 'replace_text', 'concat_with_text', 'parallel_mean', 'parallel_max', 'parallel_align'])
+
+    # lc: pretrained map is to a CLIP projection layer + ReLU + a linear layer. If False, than not using a projection layer
     parser.add_argument('--use_pretrained_map', default=False, type=str2bool)
+
+    # lc: number of mapping layer for the projection, unknown # of layers
     parser.add_argument('--num_mapping_layers', default=1, type=int)
+
+    # lc: the paper is using projection dimension of 1024
     parser.add_argument('--map_dim', default=768, type=int)
     parser.add_argument('--fusion', default='clip', choices=['align', 'align_shuffle', 'concat', 'cross', 'cross_nd', 'align_concat', 'attention_m'])
     parser.add_argument('--num_pre_output_layers', default=1, type=int)
@@ -64,6 +74,8 @@ def get_arg_parser():
     parser.add_argument('--val_check_interval', default=1.0)
     parser.add_argument('--batch_size', type=int, default=16, help='Batch size')
     parser.add_argument('--lr', type=float, default=1e-4)
+
+    # lc: weight for image/text loss
     parser.add_argument('--weight_image_loss', type=float, default=1.0)
     parser.add_argument('--weight_text_loss', type=float, default=1.0)
     parser.add_argument('--weight_fine_grained_loss', type=float, default=1.0)
@@ -114,6 +126,7 @@ def main(args):
     dataloader_val = DataLoader(dataset_val, batch_size=args.batch_size, num_workers=num_cpus, collate_fn=collator)
     if args.dataset in ['original', 'masked', 'inpainted']:
         dataloader_test = DataLoader(dataset_test, batch_size=args.batch_size, num_workers=num_cpus, collate_fn=collator)
+        # LC: not have unseen data in csv file, they are not provided but they should be in the json file can be append
         dataloader_val_unseen = DataLoader(dataset_val_unseen, batch_size=args.batch_size, num_workers=num_cpus, collate_fn=collator)
         dataloader_test_unseen = DataLoader(dataset_test_unseen, batch_size=args.batch_size, num_workers=num_cpus, collate_fn=collator)
     elif args.dataset == 'prop':
@@ -169,7 +182,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     args.gpus = [int(id_) for id_ in args.gpus.split()]
     if args.strategy == 'ddp':
-        # args.strategy = DDPPlugin(find_unused_parameters=False)
+        # #org args.strategy = DDPPlugin(find_unused_parameters=False)
         args.strategy = DDPStrategy(strategy="ddp")
     elif args.strategy == 'none':
         args.strategy = None
