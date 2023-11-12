@@ -587,7 +587,7 @@ class CLIPClassifier(pl.LightningModule):
     #     self.recall.reset()
     #     self.f1.reset()
 
-    def on_train_epoch_end(self, validation_step_outputs):
+    def on_train_epoch_end(self):
         self.acc.reset()
         self.auroc.reset()
         self.precision_score.reset()
