@@ -491,6 +491,8 @@ class CLIPClassifier(pl.LightningModule):
         return total_loss
 
     def validation_step(self, batch, batch_idx):
+        # dcumsum_cuda_kernel does not have a deterministic implementation, thus should set warn_only=True
+        torch.use_deterministic_algorithms(True, warn_only=True)
         output = self.common_step(batch, batch_idx, calling_function='validation')
 
         if self.weight_image_loss > 0:
@@ -587,7 +589,7 @@ class CLIPClassifier(pl.LightningModule):
     #     self.recall.reset()
     #     self.f1.reset()
 
-    def on_train_epoch_end(self, validation_step_outputs):
+    def on_train_epoch_end(self):
         self.acc.reset()
         self.auroc.reset()
         self.precision_score.reset()
